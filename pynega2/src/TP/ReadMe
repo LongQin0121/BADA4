@@ -1,0 +1,85 @@
+#######################################################
+#      pyBada3 Trajectory Prediction Module	          #
+#		    Release 1.0			                      #
+#		Homeyra Khaledian and Raúl Sáez               #
+#		e-mails: homeyra.khaledian@upc.edu			  #
+#				 raul.saez.garcia@upc.edu			  #	               
+#              										  #
+#######################################################
+
+Files:
+
+1) TP_main.py
+	Main module - Execute this file to run the program
+
+2) TrajectoryPrediction.py
+	Module to generate the trajectory and create the .csv file
+
+3) AircraftIntents.py
+	Supporting module containing several classes used for computations concerning aircraft intents
+
+4) Phase.py
+	Module with the Phase Class, containing all the information of a phase and methods related with the management of phases
+
+5) readXML.py
+	Module to import XML data
+
+6) plotResults.py
+	Module to create the plot
+
+7) utilities_TP.py
+	Supporting module with useful functions
+	
+8) synonims.py
+	Supporting module used when the user wants to work with aircraft not covered by BADA (a similar aircraft in terms of dimensions and performance which is contained in BADA will be used instead)
+	
+9) ReadMe.txt
+	Supporting file to guide through the project.
+
+10) A320-214.xml
+Sample BADA 4 performance file for an A320
+	
+11) A320_example-descent-profile_v1.0.xml
+	A sample profile for a descent trajectory. More details below:
+
+	- List of parameters in the integration tag:
+		- Direction: integration direction --> backwards or forwards
+		- Method: integration method --> so far, the predictor is used a predefined integration method, but this field could be used to switch between methods 
+		- Step: integration step; an attribute to indicate the units can be included too. The attribute is called "units" and the available values are --> "seconds", "minutes" or "hours". Seconds are considered by default if no attribute is specified.
+
+	- List of parameters in the initial state:
+		- m: mass [kg, lbs, tones]
+		- s: distance [NM, km, m, ft]
+		- hp: pressure altitude [NM, km, m, ft]
+		- TAS or CAS: true airspeed or calibrated airspeed [ft/min, m/s, km/h, kt]
+
+	- List of possible INTENTS:
+		- MACH: Mach number [dimensionless]
+		- CAS: calibrated airspeed [ft/min, m/s, km/h, kt]
+		- VS: vertical speed [ft/min, m/s, km/h, kt]
+		- FPA: flight path angle [degrees, radians]
+		- ALT: altitude [ft, km, m, NM]
+		- THR: throttle; value between 0 and 1 [dimensionless]
+		- ESF: energy share factor [dimensionless] -->  the energy share factor (ESF) is used for defining an acceleration or a deceleration phase, and it is defined in the BADA Manual (this intent cannot be used together with an ALT intent or an FPA intent equal to 0)
+		- ACC_CAS_t: deceleration and acceleration [m*s⁻2] --> this intent should be used ONLY together with an ALT intent or a FPA intent equal to 0, where the ESF cannot be used for acceleration or deceleration (ACC_CAS_t could be either positive or negative)
+
+	For MACH, CAS and ALT intents, the intent value can be defined as a function of the corresponding value of the previous phase. Instead of a number, the intent value should be one of the following:
+		- prev_MACH
+		- prev_CAS
+		- prev_ALT
+	For instance, if prev_MACH is used as an intent for a given phase, the Mach obtained in the last integration step of the previous phase would be used as intent for the current phase.
+
+	- List of possible END CONDITIONS:
+		- MACH: Mach number [dimensionless]
+		- CAS: calibrated airspeed [ft/min, m/s, km/h, kt]
+		- h_p: altitude [ft, km, m, NM]
+		- Delta_s: distance flown (i.e. it defines the span of the phase in distance) [NM, km, m, ft]
+		- s: distance to go [NM, km, m, ft]
+	
+	- For intents and end conditions defined by an altitude, an optional attribute can be added called h_ref. The possible values are the following:
+		- AMSL: altitude above mean sea level
+		- AAL: altitude above aerodrome level --> for this case, the airport elevation will be added to the altitude (found in the profile tag <airport_elevation>)
+		- AGL: altitude above ground level
+
+Note:
+To run, edit the configuration: Edit configurations... -> Add new configuration -> (1) Script path: change to your local, (2) Working directory: change to your local.

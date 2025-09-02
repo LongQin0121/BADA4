@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stockholm ATC Simulator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #1e1e1e;
+            color: #ffffff;
+        }
+        
+        .header {
+            background: #0d47a1;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #2d2d2d;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #444;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .control-panel {
+            background: #333;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+        
+        .control-panel h3 {
+            margin: 0 0 15px 0;
+            color: #4fc3f7;
+            font-size: 16px;
+        }
+        
+        .button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .button:hover {
+            background: #1565c0;
+        }
+        
+        .button.danger {
+            background: #d32f2f;
+        }
+        
+        .button.danger:hover {
+            background: #c62828;
+        }
+        
+        .button.success {
+            background: #388e3c;
+        }
+        
+        .button.success:hover {
+            background: #2e7d32;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 12px;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #444;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .aircraft-list {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .aircraft-item {
+            background: #444;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #4fc3f7;
+        }
+        
+        .aircraft-item h4 {
+            margin: 0 0 5px 0;
+            color: #4fc3f7;
+        }
+        
+        .aircraft-info {
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .stats {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            background: #444;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-running {
+            background: #4caf50;
+        }
+        
+        .status-stopped {
+            background: #f44336;
+        }
+        
+        .leaflet-popup-content {
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 40vh;
+            }
+            
+            .map-container {
+                height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛩️ Stockholm ATC Simulator - ESSA Terminal Area</h1>
+        <div>
+            <span class="status-indicator" id="connectionStatus"></span>
+            <span id="connectionText">Connecting...</span>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <!-- 统计信息 -->
+            <div class="stats">
+                <h3>📊 Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="activeAircraft">0</div>
+                        <div class="stat-label">Active Aircraft</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalAircraft">0</div>
+                        <div class="stat-label">Total Aircraft</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="departures">0</div>
+                        <div class="stat-label">Departures</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="arrivals">0</div>
+                        <div class="stat-label">Arrivals</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 模拟控制 -->
+            <div class="control-panel">
+                <h3>🎮 Simulation Control</h3>
+                <button class="button success" onclick="startSimulation()">▶️ Start</button>
+                <button class="button danger" onclick="stopSimulation()">⏹️ Stop</button>
+                <button class="button" onclick="addSampleAircraft()">✈️ Add Sample</button>
+                <button class="button" onclick="clearAllAircraft()">🗑️ Clear All</button>
+            </div>
+            
+            <!-- 添加航空器 -->
+            <div class="control-panel">
+                <h3>➕ Add Aircraft</h3>
+                <div class="input-group">
+                    <label>Callsign:</label>
+                    <input type="text" id="newCallsign" placeholder="SAS123" value="SAS123">
+                </div>
+                <div class="input-group">
+                    <label>Aircraft Type:</label>
+                    <select id="newAircraftType">
+                        <option value="A320">A320</option>
+                        <option value="A321">A321</option>
+                        <option value="A333">A333</option>
+                        <option value="B737">B737</option>
+                        <option value="B738">B738</option>
+                        <option value="B777">B777</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Position (Lat, Lon):</label>
+                    <input type="text" id="newPosition" placeholder="59.65, 17.92" value="59.65, 17.92">
+                </div>
+                <div class="input-group">
+                    <label>Altitude (ft):</label>
+                    <input type="number" id="newAltitude" placeholder="5000" value="5000">
+                </div>
+                <div class="input-group">
+                    <label>Heading (°):</label>
+                    <input type="number" id="newHeading" placeholder="90" value="90" min="0" max="359">
+                </div>
+                <div class="input-group">
+                    <label>Speed (kts):</label>
+                    <input type="number" id="newSpeed" placeholder="250" value="250">
+                </div>
+                <div class="input-group">
+                    <label>SID:</label>
+                    <select id="newSid">
+                        <option value="">None</option>
+                        <option value="ARS1A">ARS1A</option>
+                        <option value="ARS1B">ARS1B</option>
+                        <option value="HAPZI1A">HAPZI1A</option>
+                        <option value="HAPZI1B">HAPZI1B</option>
+                        <option value="ABENI1A">ABENI1A</option>
+                        <option value="ELTOK1A">ELTOK1A</option>
+                    </select>
+                </div>
+                <button class="button" onclick="addAircraft()">Add Aircraft</button>
+            </div>
+            
+            <!-- 航空器列表 -->
+            <div class="aircraft-list">
+                <h3>✈️ Active Aircraft</h3>
+                <div id="aircraftList">
+                    <p style="color: #888; text-align: center;">No aircraft active</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化地图
+        const map = L.map('map').setView([59.651111, 17.918611], 10);
+        
+        // 添加地图图层
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // 添加机场标记
+        const airportIcon = L.divIcon({
+            className: 'airport-icon',
+            html: '🛩️',
+            iconSize: [30, 30]
+        });
+        
+        L.marker([59.651111, 17.918611], {icon: airportIcon})
+            .addTo(map)
+            .bindPopup('<b>Stockholm Arlanda Airport (ESSA)</b><br>Elevation: 135 ft');
+        
+        // WebSocket连接
+        const socket = io();
+        
+        // 存储航空器标记
+        const aircraftMarkers = {};
+        const waypointMarkers = {};
+        
+        // 连接状态
+        socket.on('connect', function() {
+            document.getElementById('connectionStatus').className = 'status-indicator status-running';
+            document.getElementById('connectionText').textContent = 'Connected';
+        });
+        
+        socket.on('disconnect', function() {
+            document.getElementById('connectionStatus').className = 'status-indicator status-stopped';
+            document.getElementById('connectionText').textContent = 'Disconnected';
+        });
+        
+        // 处理模拟更新
+        socket.on('simulation_update', function(data) {
+            updateSimulation(data);
+        });
+        
+        function updateSimulation(data) {
+            // 更新统计信息
+            document.getElementById('activeAircraft').textContent = data.stats.active_aircraft;
+            document.getElementById('totalAircraft').textContent = data.stats.total_aircraft;
+            document.getElementById('departures').textContent = data.stats.departed;
+            document.getElementById('arrivals').textContent = data.stats.arrived;
+            
+            // 清除旧的航空器标记
+            Object.keys(aircraftMarkers).forEach(callsign => {
+                if (!data.aircraft[callsign]) {
+                    map.removeLayer(aircraftMarkers[callsign]);
+                    delete aircraftMarkers[callsign];
+                }
+            });
+            
+            // 更新或添加航空器标记
+            Object.values(data.aircraft).forEach(aircraft => {
+                const callsign = aircraft.callsign;
+                
+                if (aircraftMarkers[callsign]) {
+                    // 更新位置
+                    aircraftMarkers[callsign].setLatLng([aircraft.lat, aircraft.lon]);
+                    aircraftMarkers[callsign].setRotationAngle(aircraft.heading);
+                } else {
+                    // 创建新标记
+                    const aircraftIcon = L.divIcon({
+                        className: 'aircraft-icon',
+                        html: `<div style="
+                            background: #2196f3;
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 50%;
+                            border: 2px solid white;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 12px;
+                            transform: rotate(${aircraft.heading}deg);
+                        ">✈</div>`,
+                        iconSize: [24, 24]
+                    });
+                    
+                    const marker = L.marker([aircraft.lat, aircraft.lon], {icon: aircraftIcon})
+                        .addTo(map)
+                        .bindPopup(`
+                            <b>${aircraft.callsign}</b><br>
+                            Type: ${aircraft.aircraft_type}<br>
+                            Altitude: ${aircraft.altitude} ft<br>
+                            Speed: ${aircraft.speed} kts<br>
+                            Heading: ${aircraft.heading}°<br>
+                            ${aircraft.sid ? `SID: ${aircraft.sid}<br>` : ''}
+                            ${aircraft.star ? `STAR: ${aircraft.star}<br>` : ''}
+                            ${aircraft.current_waypoint ? `Next: ${aircraft.current_waypoint}` : ''}
+                        `);
+                    
+                    aircraftMarkers[callsign] = marker;
+                }
+            });
+            
+            // 添加航路点标记（只添加一次）
+            if (Object.keys(waypointMarkers).length === 0) {
+                Object.entries(data.waypoints).forEach(([name, waypoint]) => {
+                    const waypointIcon = L.divIcon({
+                        className: 'waypoint-icon',
+                        html: `<div style="
+                            background: ${waypoint.type === 'entry_point' ? '#ff9800' : '#4caf50'};
+                            color: white;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-size: 10px;
+                            font-weight: bold;
+                            border: 1px solid white;
+                        ">${name}</div>`,
+                        iconSize: [50, 20]
+                    });
+                    
+                    const marker = L.marker([waypoint.lat, waypoint.lon], {icon: waypointIcon})
+                        .addTo(map)
+                        .bindPopup(`<b>${name}</b><br>Type: ${waypoint.type}`);
+                    
+                    waypointMarkers[name] = marker;
+                });
+            }
+            
+            // 更新航空器列表
+            updateAircraftList(data.aircraft);
+        }
+        
+        function updateAircraftList(aircraft) {
+            const listElement = document.getElementById('aircraftList');
+            
+            if (Object.keys(aircraft).length === 0) {
+                listElement.innerHTML = '<p style="color: #888; text-align: center;">No aircraft active</p>';
+                return;
+            }
+            
+            const aircraftHtml = Object.values(aircraft).map(ac => `
+                <div class="aircraft-item">
+                    <h4>${ac.callsign} (${ac.aircraft_type})</h4>
+                    <div class="aircraft-info">
+                        Alt: ${ac.altitude}ft | Spd: ${ac.speed}kts | Hdg: ${ac.heading}°<br>
+                        ${ac.current_waypoint ? `Next: ${ac.current_waypoint}` : 'No waypoint'}
+                        ${ac.sid ? `<br>SID: ${ac.sid}` : ''}
+                        ${ac.star ? `<br>STAR: ${ac.star}` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            listElement.innerHTML = aircraftHtml;
+        }
+        
+        // 控制函数
+        function startSimulation() {
+            fetch('/api/simulation/start', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => console.log('Simulation started:', data));
+        }
+        
+        function stopSimulation() {
+            fetch('/api/simulation/stop', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => console.log('Simulation stopped:', data));
+        }
+        
+        function addAircraft() {
+            const position = document.getElementById('newPosition').value.split(',');
+            const lat = parseFloat(position[0].trim());
+            const lon = parseFloat(position[1].trim());
+            
+            const aircraftData = {
+                callsign: document.getElementById('newCallsign').value,
+                aircraft_type: document.getElementById('newAircraftType').value,
+                lat: lat,
+                lon: lon,
+                altitude: parseInt(document.getElementById('newAltitude').value),
+                heading: parseInt(document.getElementById('newHeading').value),
+                speed: parseInt(document.getElementById('newSpeed').value),
+                sid: document.getElementById('newSid').value,
+                runway: '01L'
+            };
+            
+            socket.emit('add_aircraft', aircraftData);
+        }
+        
+        function addSampleAircraft() {
+            const samples = [
+                {callsign: 'SAS' + Math.floor(Math.random() * 999), aircraft_type: 'A320', lat: 59.651, lon: 17.918, altitude: 1000, heading: 13, speed: 180, sid: 'ARS1A'},
+                {callsign: 'NAX' + Math.floor(Math.random() * 999), aircraft_type: 'B737', lat: 59.8, lon: 17.8, altitude: 15000, heading: 180, speed: 280, star: 'ARS1A'},
+                {callsign: 'LH' + Math.floor(Math.random() * 999), aircraft_type: 'A333', lat: 59.4, lon: 17.5, altitude: 12000, heading: 45, speed: 250, star: 'ELTOK1A'}
+            ];
+            
+            const sample = samples[Math.floor(Math.random() * samples.length)];
+            socket.emit('add_aircraft', sample);
+        }
+        
+        function clearAllAircraft() {
+            Object.keys(aircraftMarkers).forEach(callsign => {
+                fetch('/api/aircraft/remove', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({callsign: callsign})
+                });
+            });
+        }
+        
+        // 初始化时获取状态
+        fetch('/api/simulation/state')
+            .then(response => response.json())
+            .then(data => updateSimulation(data));
+    </script>
+</body>
+</html>

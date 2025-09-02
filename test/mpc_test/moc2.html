@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>频域 vs 时域设计方法</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .domain-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            color: #333;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .domain-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .frequency-domain {
+            border-top: 5px solid #e74c3c;
+        }
+        
+        .time-domain {
+            border-top: 5px solid #2ecc71;
+        }
+        
+        .domain-title {
+            text-align: center;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .frequency-domain .domain-title {
+            color: #e74c3c;
+        }
+        
+        .time-domain .domain-title {
+            color: #2ecc71;
+        }
+        
+        .math-section {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-size: 0.9em;
+        }
+        
+        .visual-example {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid #ddd;
+        }
+        
+        .signal-graph {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .graph-container {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            width: 200px;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .graph-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .advantages-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .advantages-list li {
+            background: rgba(52, 152, 219, 0.1);
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #3498db;
+        }
+        
+        .disadvantages-list li {
+            background: rgba(231, 76, 60, 0.1);
+            border-left-color: #e74c3c;
+        }
+        
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .tool-card {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .tool-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .example-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            color: #333;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .comparison-table th {
+            background: #4a90e2;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 5px solid #ffd700;
+        }
+        
+        .workflow-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin: 25px 0;
+        }
+        
+        .workflow {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .workflow-step {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .workflow-comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .signal-graph {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 频域 vs 时域设计方法</h1>
+        
+        <div class="highlight-box">
+            <h2 style="color: #ffd700; margin-top: 0;">🎯 核心区别</h2>
+            <p style="font-size: 1.2em; text-align: center;">
+                <strong>"usually in frequency domain"</strong> 表示经典控制主要在频域进行分析和设计<br>
+                <strong>"usually in time domain"</strong> 表示MPC主要在时域进行分析和设计<br><br>
+                这反映了两种完全不同的控制器设计哲学和数学工具
+            </p>
+        </div>
+        
+        <div class="comparison-container">
+            <div class="domain-card frequency-domain">
+                <h2 class="domain-title">📈 频域方法</h2>
+                <div class="math-section">
+                    <h3>数学基础：拉普拉斯变换</h3>
+                    <div class="code-block">
+# 频域表示
+s = jω  # 复频率变量
+G(s) = Y(s)/U(s)  # 传递函数
+
+# 典型传递函数
+G(s) = K / (s² + 2ζωₙs + ωₙ²)
+
+# 频域分析
+|G(jω)| = 幅值响应
+∠G(jω) = 相位响应
+                    </div>
+                </div>
+                
+                <h3>主要分析工具</h3>
+                <div class="tools-grid">
+                    <div class="tool-card">
+                        <strong>Bode图</strong><br>
+                        幅值与相位分析
+                    </div>
+                    <div class="tool-card">
+                        <strong>Nyquist图</strong><br>
+                        稳定性判断
+                    </div>
+                    <div class="tool-card">
+                        <strong>根轨迹</strong><br>
+                        参数变化影响
+                    </div>
+                    <div class="tool-card">
+                        <strong>频率响应</strong><br>
+                        系统特性分析
+                    </div>
+                </div>
+                
+                <h3>✅ 优势</h3>
+                <ul class="advantages-list">
+                    <li>直观的稳定性分析（相位裕度、幅值裕度）</li>
+                    <li>成熟的设计方法和经验公式</li>
+                    <li>鲁棒性分析清晰明确</li>
+                    <li>干扰和噪声抑制设计直观</li>
+                    <li>计算相对简单，适合手工计算</li>
+                </ul>
+                
+                <h3>❌ 局限性</h3>
+                <ul class="advantages-list disadvantages-list">
+                    <li>难以处理时变系统</li>
+                    <li>多变量系统分析复杂</li>
+                    <li>约束处理能力有限</li>
+                    <li>非线性系统应用困难</li>
+                    <li>优化性能设计不直观</li>
+                </ul>
+            </div>
+            
+            <div class="domain-card time-domain">
+                <h2 class="domain-title">⏰ 时域方法</h2>
+                <div class="math-section">
+                    <h3>数学基础：状态空间模型</h3>
+                    <div class="code-block">
+# 时域表示
+x(k+1) = Ax(k) + Bu(k)  # 状态方程
+y(k) = Cx(k) + Du(k)    # 输出方程
+
+# MPC优化问题
+min Σ[||x(k)-r(k)||²Q + ||u(k)||²R]
+s.t. x(k+1) = f(x(k), u(k))
+     u_min ≤ u(k) ≤ u_max
+                    </div>
+                </div>
+                
+                <h3>主要分析工具</h3>
+                <div class="tools-grid">
+                    <div class="tool-card">
+                        <strong>状态空间</strong><br>
+                        系统建模
+                    </div>
+                    <div class="tool-card">
+                        <strong>优化算法</strong><br>
+                        性能提升
+                    </div>
+                    <div class="tool-card">
+                        <strong>仿真分析</strong><br>
+                        时间响应
+                    </div>
+                    <div class="tool-card">
+                        <strong>约束处理</strong><br>
+                        安全边界
+                    </div>
+                </div>
+                
+                <h3>✅ 优势</h3>
+                <ul class="advantages-list">
+                    <li>天然处理多变量系统</li>
+                    <li>约束条件直接嵌入设计</li>
+                    <li>性能指标灵活可调</li>
+                    <li>适用于非线性和时变系统</li>
+                    <li>预测能力强，优化性能好</li>
+                </ul>
+                
+                <h3>❌ 局限性</h3>
+                <ul class="advantages-list disadvantages-list">
+                    <li>计算复杂度高</li>
+                    <li>鲁棒性分析困难</li>
+                    <li>需要准确的系统模型</li>
+                    <li>参数调节复杂</li>
+                    <li>实时性要求高</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="example-section">
+            <h2 style="color: #333; text-align: center;">🔍 具体对比实例</h2>
+            
+            <h3>同一个系统的两种设计方法</h3>
+            <div class="visual-example">
+                <h4>系统：电机调速控制</h4>
+                <div class="signal-graph">
+                    <div class="graph-container">
+                        <div class="graph-title">频域设计</div>
+                        <div style="color: #666;">G(s) = K/(Js+b)</div>
+                        <div style="font-size: 0.9em;">分析Bode图设计PID</div>
+                    </div>
+                    <div style="font-size: 2em; color: #3498db;">⟷</div>
+                    <div class="graph-container">
+                        <div class="graph-title">时域设计</div>
+                        <div style="color: #666;">ẋ = Ax + Bu</div>
+                        <div style="font-size: 0.9em;">建立状态空间MPC</div>
+                    </div>
+                </div>
+            </div>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>设计方面</th>
+                        <th>频域方法 (经典控制)</th>
+                        <th>时域方法 (MPC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>数学工具</strong></td>
+                        <td>拉普拉斯变换、传递函数</td>
+                        <td>状态空间、优化理论</td>
+                    </tr>
+                    <tr>
+                        <td><strong>分析对象</strong></td>
+                        <td>频率响应 |G(jω)|, ∠G(jω)</td>
+                        <td>时间序列 x(t), u(t), y(t)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>设计指标</strong></td>
+                        <td>相位裕度、幅值裕度、带宽</td>
+                        <td>跟踪误差、控制能耗、约束满足</td>
+                    </tr>
+                    <tr>
+                        <td><strong>稳定性</strong></td>
+                        <td>Nyquist判据、Bode稳定性</td>
+                        <td>Lyapunov稳定性、终端约束</td>
+                    </tr>
+                    <tr>
+                        <td><strong>鲁棒性</strong></td>
+                        <td>增益裕度、相位裕度</td>
+                        <td>鲁棒约束、不确定性集合</td>
+                    </tr>
+                    <tr>
+                        <td><strong>约束处理</strong></td>
+                        <td>饱和、限幅器（后处理）</td>
+                        <td>优化约束（内建）</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="workflow-comparison">
+            <div class="workflow">
+                <h3 style="color: #e74c3c; text-align: center;">频域设计流程</h3>
+                <div class="workflow-step">
+                    <strong>1. 建立传递函数</strong><br>
+                    G(s) = Y(s)/U(s)
+                </div>
+                <div class="workflow-step">
+                    <strong>2. 绘制Bode图</strong><br>
+                    分析幅频、相频特性
+                </div>
+                <div class="workflow-step">
+                    <strong>3. 设计控制器</strong><br>
+                    满足性能指标的C(s)
+                </div>
+                <div class="workflow-step">
+                    <strong>4. 验证闭环性能</strong><br>
+                    检查稳定裕度
+                </div>
+            </div>
+            
+            <div class="workflow">
+                <h3 style="color: #2ecc71; text-align: center;">时域设计流程</h3>
+                <div class="workflow-step">
+                    <strong>1. 状态空间建模</strong><br>
+                    ẋ = f(x,u), y = h(x,u)
+                </div>
+                <div class="workflow-step">
+                    <strong>2. 定义目标函数</strong><br>
+                    J = Σ[L(x,u,r)]
+                </div>
+                <div class="workflow-step">
+                    <strong>3. 设置约束条件</strong><br>
+                    物理限制和安全边界
+                </div>
+                <div class="workflow-step">
+                    <strong>4. 在线优化求解</strong><br>
+                    实时计算最优控制
+                </div>
+            </div>
+        </div>
+        
+        <div class="example-section">
+            <h2 style="color: #333; text-align: center;">💡 为什么选择不同域？</h2>
+            
+            <div class="comparison-container">
+                <div style="background: rgba(231, 76, 60, 0.1); padding: 20px; border-radius: 12px;">
+                    <h3 style="color: #e74c3c;">频域的天然优势</h3>
+                    <div class="code-example">
+# 频域中干扰分析很直观
+S(s) = 1/(1+GC)      # 敏感度函数
+T(s) = GC/(1+GC)     # 闭环传递函数
+
+# 设计目标清晰
+# 低频: |S(jω)| 小 → 好的干扰抑制
+# 高频: |T(jω)| 小 → 好的噪声抑制
+                    </div>
+                    <p><strong>适合问题：</strong>干扰抑制、噪声抑制、模型不确定性</p>
+                </div>
+                
+                <div style="background: rgba(46, 204, 113, 0.1); padding: 20px; border-radius: 12px;">
+                    <h3 style="color: #2ecc71;">时域的天然优势</h3>
+                    <div class="code-example">
+# 时域中约束处理很自然
+minimize: Σ[||x-r||² + ||u||²]
+subject to:
+    x(k+1) = f(x(k), u(k))
+    u_min ≤ u(k) ≤ u_max    # 控制约束
+    x_safe ≤ x(k) ≤ x_safe  # 安全约束
+                    </div>
+                    <p><strong>适合问题：</strong>控制约束、过程约束、多目标优化</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="highlight-box">
+            <h2 style="color: #ffd700; margin-top: 0;">🎯 关键洞察</h2>
+            <div style="font-size: 1.1em; text-align: center;">
+                <p><strong>频域方法擅长</strong>分析系统的频率特性、稳定性和鲁棒性</p>
+                <p><strong>时域方法擅长</strong>处理约束、优化性能和预测控制</p>
+                <p style="font-style: italic; color: #ffd700;">
+                    选择哪个域取决于你要解决的问题类型！<br>
+                    现代控制系统往往结合两种方法的优势
+                </p>
+            </div>
+        </div>
+        
+        <div class="example-section">
+            <h2 style="color: #333; text-align: center;">🔄 现代混合方法</h2>
+            <p style="text-align: center; font-size: 1.1em;">
+                现代控制系统设计往往<strong>结合两种域的优势</strong>：
+            </p>
+            <div class="code-block">
+# 混合设计方法
+def hybrid_control_design():
+    # 1. 频域分析：了解系统特性
+    bode_analysis()          # 理解系统动态
+    stability_margins()      # 确保鲁棒性
+    
+    # 2. 时域设计：实现约束控制
+    state_space_model()      # 建立精确模型
+    mpc_with_constraints()   # 处理约束和优化
+    
+    # 3. 层次化架构
+    # 上层MPC：处理约束和优化
+    # 下层PID：快速跟踪和鲁棒性
+    
+    return "最佳控制性能"
+            </div>
+        </div>
+    </div>
+</body>
+</html>

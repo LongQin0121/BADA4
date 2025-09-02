@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>China Airspace Control Sector Development Timeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, #4299e1, #38b2ac);
+            transform: translateX(-50%);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin: 40px 0;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        .timeline-item:nth-child(odd) {
+            animation-delay: 0.2s;
+        }
+        
+        .timeline-item:nth-child(even) {
+            animation-delay: 0.4s;
+        }
+        
+        .timeline-content {
+            position: relative;
+            width: 45%;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #4299e1;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-left: auto;
+            border-left: none;
+            border-right: 5px solid #38b2ac;
+        }
+        
+        .timeline-year {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #4299e1, #38b2ac);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2em;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        
+        .timeline-title {
+            font-size: 1.4em;
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .timeline-description {
+            color: #4a5568;
+            line-height: 1.6;
+            font-size: 1.1em;
+        }
+        
+        .sector-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 3px;
+            font-weight: 500;
+        }
+        
+        .change-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            color: #2d3748;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 3px;
+            font-weight: 500;
+        }
+        
+        .transfer-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #a29bfe, #fd79a8);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 3px;
+            font-weight: 500;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 30px;
+            }
+            
+            .timeline-content {
+                width: calc(100% - 60px);
+                margin-left: 60px !important;
+            }
+            
+            .timeline-year {
+                left: 30px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Shanghai ATC Airspace Development Timeline</h1>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-year">2011</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Initial Configuration</div>
+                    <div class="timeline-description">
+                        Only 4 sectors:<br>
+                        <span class="sector-tag">ACC04</span>
+                        <span class="sector-tag">ACC06</span>
+                        <span class="sector-tag">Shanghai APP</span>
+                        <span class="sector-tag">Nanjing APP</span><br>
+                        <em>(Excluding tower control)</em>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-year">2012</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Sector Expansion</div>
+                    <div class="timeline-description">
+                        New sector established: The west half of ACC04 or High Airspace of Nanjing APP<br>
+                        <span class="change-tag">+ ACC14</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-year">2014</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Continued Expansion</div>
+                    <div class="timeline-description">
+                        New sector established: The North Half of ACC06<br>
+                        <span class="change-tag">+ ACC16</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-year">2016</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Control Transfer</div>
+                    <div class="timeline-description">
+                        Low altitude portions of ACC06/16 transferred to Nanjing APP<br>
+                        <span class="transfer-tag">ACC06/16 Low Altitude → Nanjing APP</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-year">2018</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Further Transfer</div>
+                    <div class="timeline-description">
+                        Low altitude portion of ACC04 transferred to Shanghai APP<br>
+                        <span class="transfer-tag">ACC04 Low Altitude → Shanghai APP</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-year">2021</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Major Restructuring</div>
+                    <div class="timeline-description">
+                        Original ACC04 and ACC06 subdivided into 8 en-route sectors<br>
+                        <span class="change-tag">Original ACC04 & ACC06 → 8 En-route Sectors + 2 APP Sectors</span>
+                    </div>
+                </div>
+            </div>
+            
+            
+            
+        </div>
+    </div>
+</body>
+</html>

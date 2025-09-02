@@ -1,0 +1,11 @@
+<waypoint_list>
+	<SID airport="LEBL">SENIA1A</SID>
+	<STAR airport="LEBL">SENIA1A</STAR>
+	<waypoint id="SENIA" type="SID/STAR/LOW/HIGH/VFR/OTHER"><!--type is optional--> 
+		<latitude>50</latitude> <!--not mandatory-->
+		<longitude>8.5</longitude><!--not mandatory-->
+		<speed_constraint units="kt" upper="250" lower="250"></speed_constraint><!--not mandatory-->
+		<altitude_constraint units="ft" upper="6000" lower="6000"></altitude_constraint><!--not mandatory-->
+		<fixed>TRUE/FALSE</fixed>
+	</waypoint>
+</waypoint_list>

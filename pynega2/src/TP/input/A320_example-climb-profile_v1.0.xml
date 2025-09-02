@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='utf-8'?>
+<profile id='A320'>
+  <airport_elevation units='ft'>0</airport_elevation>
+  <start_trajectory> 
+    <date>2020-12-25</date> 
+    <time>11:00:00</time>
+  </start_trajectory>
+  <block id='A320' type='CLIMB' description='Test trajectory'>
+    <integration>
+      <direction>forwards</direction>
+      <method>Euler</method>
+      <step>1</step>
+    </integration>
+    <initial-state>
+      <m units='kg'>77000</m>
+      <s units='NM'>0.0</s>
+      <hp units='ft'>50</hp>
+      <CAS units='kt'>V2</CAS>
+    </initial-state>
+    <phase id='1' description='Phase 1' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='3' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt' factor='1.0'>V2</intent1>
+        <intent2 type="THR" units='dimensionless' factor="0.8">TOGA</intent2>
+        <end-condition variable="h_p" units='ft'>1500</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='2' description='Phase 2' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='3' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.3</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+        <end-condition variable="CAS" units='kt' factor ='1.0'>195</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='3' description='Phase 3' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='1' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>1.7</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+        <end-condition variable="CAS" units='kt' factor = '1.0'>172</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='4' description='Phase 4' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.3</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+        <end-condition variable="CAS" units='kt' factor='1.0'>250</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='5' description='Phase 5' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt' factor = '1.0'>prev_CAS</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+        <end-condition variable="h_p" units='ft'>10000</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='6' description='Phase 6' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.3</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+        <end-condition variable="CAS" units='kt' factor = '1.0'>290</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='7' description='Phase 7' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt' factor='none'>prev_CAS</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+	<end-condition variable="MACH" units='dimensionless'>0.77</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='8' description='Phase 8' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="MACH" units='dimensionless'>prev_MACH</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+	<end-condition variable="h_p" units='ft'>33000</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='8b' description='Phase 8b' active='FALSE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>1.7</intent1>
+        <intent2 type="THR" units='dimensionless'>MCMB</intent2>
+	<end-condition variable="h_p" units='ft'>37000</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='9' description='Phase 9' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='LGUP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ALT" units='ft'>prev_ALT</intent1>
+        <intent2 type="MACH" units='dimensionless'>prev_MACH</intent2>
+        <end-condition variable="Delta_s" units='NM'>50</end-condition>
+      </trajectory-prediction>
+    </phase>
+  </block>
+</profile> 

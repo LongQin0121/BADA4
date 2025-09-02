@@ -1,0 +1,28 @@
+<waypoint_list>
+	<waypoint> 
+		<name>First</name>
+		<latitude>50</latitude>
+		<longitude>8.5</longitude>
+		<speed_constraint units="kt" upper="300"></speed_constraint>
+		<altitude_constraint units="ft" upper="6000"></altitude_constraint>
+	</waypoint>
+	<waypoint> 
+		<name>Second</name>
+		<latitude>51</latitude>
+		<longitude>8.8</longitude>
+	</waypoint>
+	<waypoint> 
+		<name>Third</name>
+		<latitude>52</latitude>
+		<longitude>9.35</longitude>
+		<speed_constraint units="kt" lower="200" upper="250"></speed_constraint>
+		<altitude_constraint units="ft" lower="600" upper="6000"></altitude_constraint>
+	</waypoint>
+	<waypoint> 
+		<name>Forth</name>
+		<latitude>52.2</latitude>
+		<longitude>9.65</longitude>
+		<speed_constraint units="kt" lower="200" upper="250"></speed_constraint>
+		<altitude_constraint units="ft" lower="600" upper="6000"></altitude_constraint>
+	</waypoint>
+</waypoint_list>

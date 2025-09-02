@@ -1,0 +1,8 @@
+# IDE folder
+.idea/
+
+# Python virtual environment
+venv/
+
+# Installation folders
+*.egg-info/

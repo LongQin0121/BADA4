@@ -1,0 +1,27 @@
+python -c "
+import bluesky
+import os
+import pathlib
+
+bluesky_path = pathlib.Path(bluesky.__file__).parent
+print('BlueSky 路径:', bluesky_path)
+
+# 查找所有 .ui 文件
+ui_files = list(bluesky_path.rglob('*.ui'))
+print('找到的 .ui 文件:', ui_files)
+
+# 查找 graphics 相关文件夹
+graphics_dirs = []
+for item in bluesky_path.rglob('*'):
+    if item.is_dir() and ('graphics' in item.name.lower() or 'palette' in item.name.lower()):
+        graphics_dirs.append(item)
+print('找到的图形相关目录:', graphics_dirs)
+
+# 查看 resources 目录内容
+resources_dir = bluesky_path / 'resources'
+if resources_dir.exists():
+    print('Resources 目录内容:')
+    for item in resources_dir.rglob('*'):
+        if item.is_file():
+            print(f'  {item.relative_to(bluesky_path)}')
+"

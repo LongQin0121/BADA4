@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A320速度性能分析</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .info-card {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .info-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+        .info-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin: 30px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .data-table {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background: #e9ecef;
+            font-weight: bold;
+            color: #495057;
+        }
+        tr:hover {
+            background: #e3f2fd;
+        }
+        .speed-range {
+            font-weight: bold;
+            color: #0984e3;
+        }
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✈️ Airbus A320 速度性能分析</h1>
+        <p class="subtitle">飞行高度层 FL030 - FL200 速度范围分析</p>
+        
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>最大运行速度</h3>
+                <div class="value">350</div>
+                <div>knots (VMO)</div>
+            </div>
+            <div class="info-card">
+                <h3>最大运行马赫数</h3>
+                <div class="value">0.82</div>
+                <div>Mach (MMO)</div>
+            </div>
+            <div class="info-card">
+                <h3>分析高度范围</h3>
+                <div class="value">3,000 - 20,000</div>
+                <div>英尺 (18个高度层)</div>
+            </div>
+            <div class="info-card">
+                <h3>典型重量</h3>
+                <div class="value">65</div>
+                <div>吨 (巡航重量)</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="speedChart"></canvas>
+        </div>
+
+        <div class="data-table">
+            <h3>📊 详细速度数据表</h3>
+            <table id="speedTable">
+                <thead>
+                    <tr>
+                        <th>飞行高度层</th>
+                        <th>高度 (英尺)</th>
+                        <th>高度 (米)</th>
+                        <th>最小速度 (knots)</th>
+                        <th>最大速度 (knots)</th>
+                        <th>速度范围</th>
+                        <th>马赫数限制</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="note">
+            <strong>📝 说明：</strong>
+            <ul>
+                <li><strong>最小速度</strong>：基于失速速度计算，考虑1.3倍安全裕度</li>
+                <li><strong>最大速度</strong>：受VMO (350 knots) 和 MMO (0.82 Mach) 限制</li>
+                <li><strong>实际运行</strong>：考虑ATC限制、燃油经济性等因素</li>
+                <li><strong>高度影响</strong>：随高度增加，空气密度降低，真空速度与指示空速关系改变</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // A320 performance data
+        const aircraftData = {
+            vmo: 350,      // Maximum Operating Speed (knots)
+            mmo: 0.82,     // Maximum Operating Mach
+            mtow: 78000,   // Maximum Takeoff Weight (kg)
+            oew: 42600,    // Operating Empty Weight (kg)
+            wingArea: 124, // Wing area (m²)
+        };
+
+        // Standard atmosphere data
+        function getStandardAtmosphere(altitudeFt) {
+            const altitudeM = altitudeFt * 0.3048;
+            
+            // ISA standard atmosphere
+            if (altitudeM <= 11000) {
+                const temp = 288.15 - 0.0065 * altitudeM; // K
+                const pressure = 101325 * Math.pow(temp / 288.15, 5.2561); // Pa
+                const density = pressure / (287.05 * temp); // kg/m³
+            } else {
+                const temp = 216.65; // K (constant in stratosphere)
+                const pressure = 22632 * Math.exp(-0.0001577 * (altitudeM - 11000)); // Pa
+                const density = pressure / (287.05 * temp); // kg/m³
+            }
+            
+            const temp = altitudeM <= 11000 ? 288.15 - 0.0065 * altitudeM : 216.65;
+            const pressure = altitudeM <= 11000 ? 
+                101325 * Math.pow(temp / 288.15, 5.2561) :
+                22632 * Math.exp(-0.0001577 * (altitudeM - 11000));
+            const density = pressure / (287.05 * temp);
+            const soundSpeed = Math.sqrt(1.4 * 287.05 * temp); // m/s
+            
+            return { temp, pressure, density, soundSpeed };
+        }
+
+        // Calculate stall speed (simplified)
+        function calculateStallSpeed(weight, altitude, flapsConfig = 'clean') {
+            const atm = getStandardAtmosphere(altitude);
+            const weightN = weight * 9.81; // Convert to Newtons
+            
+            // Simplified CL_max values
+            const clMax = flapsConfig === 'clean' ? 1.6 : 2.2;
+            
+            // Stall speed calculation: V_stall = sqrt(2*W/(rho*S*CL_max))
+            const vstallMs = Math.sqrt(2 * weightN / (atm.density * aircraftData.wingArea * clMax));
+            const vstallKnots = vstallMs * 1.94384; // Convert m/s to knots
+            
+            return vstallKnots * 1.3; // 1.3 safety factor for minimum operating speed
+        }
+
+        // Calculate maximum speed considering VMO and MMO
+        function calculateMaxSpeed(altitude) {
+            const atm = getStandardAtmosphere(altitude);
+            const soundSpeedKnots = atm.soundSpeed * 1.94384; // Convert to knots
+            
+            // Speed limited by MMO
+            const maxSpeedByMach = aircraftData.mmo * soundSpeedKnots;
+            
+            // Return the more restrictive limit
+            return Math.min(aircraftData.vmo, maxSpeedByMach);
+        }
+
+        // Generate data for all flight levels
+        const flightLevels = [];
+        const speedData = [];
+        
+        for (let fl = 30; fl <= 200; fl += 10) {
+            const altitudeFt = fl * 100;
+            const altitudeM = altitudeFt * 0.3048;
+            const cruiseWeight = 65000; // kg (typical cruise weight)
+            
+            const minSpeed = calculateStallSpeed(cruiseWeight, altitudeFt);
+            const maxSpeed = calculateMaxSpeed(altitudeFt);
+            const atm = getStandardAtmosphere(altitudeFt);
+            const machAtVmo = aircraftData.vmo / (atm.soundSpeed * 1.94384);
+            
+            flightLevels.push(`FL${fl.toString().padStart(3, '0')}`);
+            speedData.push({
+                flightLevel: `FL${fl.toString().padStart(3, '0')}`,
+                altitudeFt: altitudeFt,
+                altitudeM: Math.round(altitudeM),
+                minSpeed: Math.round(minSpeed),
+                maxSpeed: Math.round(maxSpeed),
+                speedRange: Math.round(maxSpeed - minSpeed),
+                machLimit: Math.min(aircraftData.mmo, machAtVmo).toFixed(3)
+            });
+        }
+
+        // Create chart
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: flightLevels,
+                datasets: [
+                    {
+                        label: '最大速度 (knots)',
+                        data: speedData.map(d => d.maxSpeed),
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 3,
+                        fill: '+1',
+                        tension: 0.4
+                    },
+                    {
+                        label: '最小速度 (knots)',
+                        data: speedData.map(d => d.minSpeed),
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 3,
+                        fill: 'origin',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'A320 速度包络线 - 不同飞行高度层',
+                        font: { size: 18, weight: 'bold' }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '飞行高度层',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        grid: { display: true, alpha: 0.3 }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '速度 (knots)',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        grid: { display: true, alpha: 0.3 },
+                        min: 180,
+                        max: 380
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+
+        // Populate data table
+        const tableBody = document.querySelector('#speedTable tbody');
+        speedData.forEach(data => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td><strong>${data.flightLevel}</strong></td>
+                <td>${data.altitudeFt.toLocaleString()}</td>
+                <td>${data.altitudeM.toLocaleString()}</td>
+                <td>${data.minSpeed}</td>
+                <td>${data.maxSpeed}</td>
+                <td class="speed-range">${data.speedRange} knots</td>
+                <td>${data.machLimit}</td>
+            `;
+        });
+    </script>
+</body>
+</html>

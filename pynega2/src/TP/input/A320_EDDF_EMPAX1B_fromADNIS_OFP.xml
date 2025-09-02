@@ -1,0 +1,154 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!-- Warning when computing s_WP  from coordinates! turn stuff!!??? that shortens distance! check FASTOP -->
+
+<profile id='A320_EDDF_EMPAX1B_ADNIS-RWY07C_OFP'>
+  <airport_elevation units='ft'>329</airport_elevation>
+  <block id='Block1' description='A320_EDDF_EMPAX1B_ADNIS-RWY07C_OFP'>
+    <integration>
+      <direction>backwards</direction>
+      <method>Euler</method>
+      <step units='seconds'>2.0</step>
+    </integration>
+    <initial-state>
+      <m units='kg'>LM</m>
+      <s units='NM'>0.0</s>
+      <hp units='ft' h_ref='AAL'>50</hp>     
+      <CAS units='kt'>122</CAS>  
+    </initial-state>
+
+    <!-- GLIDE SLOPE ....................................  -->    
+    <phase id='1_GS' description='1: Short final climbing at V_app' active='TRUE'>   
+      <aircraft config='FULL' gear='DOWN'></aircraft> 
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt'>V_app</intent1>        
+        <intent2 type="FPA" units='deg'>gamma_ILS</intent2>                   
+        <end-condition variable="h_p" units='ft' h_ref='AAL'>1000</end-condition> 
+      </trajectory-prediction>
+    </phase>
+    <phase id='2_GS' description='Climb in GS and accelerate to V_Full' active='FALSE'>  
+      <aircraft config='FULL' gear='DOWN'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.7</intent1>                <!-- TODO(pyNega): how to generalise this? answer: new intent CAS_HD -->
+        <intent2 type="FPA" units='deg'>gamma_ILS</intent2>                           
+        <end-condition variable="CAS" units='kt' factor='1.0'>V_FULL</end-condition> 
+      </trajectory-prediction>
+    </phase>
+    <phase id='2_GS' description='Climb in GS and accelerate to V_Full' active='TRUE'>  
+      <aircraft config='FULL' gear='DOWN'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ACC_CAS_h" units='dimensionless'>0.03375</intent1>                <!-- TODO(pyNega): how to generalise this? answer: new intent CAS_HD -->
+        <intent2 type="FPA" units='deg'>gamma_ILS</intent2>                           
+        <end-condition variable="CAS" units='kt' factor='1.0'>V_FULL</end-condition> 
+      </trajectory-prediction>
+    </phase>
+    <phase id='3_GS' description='Climb in GS and accelerate to V_F3' active='TRUE'>
+      <aircraft config='CONF3' gear='DOWN'></aircraft>    
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.7</intent1>                 <!-- TODO(pyNega): how to generalise this? answer: new intent CAS_HD -->
+        <intent2 type="FPA" units='deg'>gamma_ILS</intent2>       
+        <end-condition variable="CAS" units='kt' factor='1.0'>V_F3</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='4_GS' description='Climb in GS and accelerate to 2000 ft AGL' active='TRUE'>
+      <aircraft config='CONF2' gear='UP'></aircraft>   
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.7</intent1>      <!-- TODO(pyNega): how to generalise this? answer: new intent CAS_HD -->
+        <intent2 type="FPA" units='deg'>gamma_ILS</intent2>                     <!-- TODO(pyNega):    TODO: new intent GP-->
+        <end-condition variable="h_p" units='ft' h_ref='AAL'>2000</end-condition> 
+      </trajectory-prediction>
+    </phase>
+    <phase id='5_GS' description='Climb in GS to reach FAP at S speed' active='TRUE'>
+      <aircraft config='CONF1'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.8</intent1>      <!-- TODO(pyNega): how to generalise this? answer: new intent CAS_HD -->
+        <intent2 type="FPA" units='deg'>gamma_ILS</intent2>                     
+        <end-condition variable="h_p" units='ft'>hp_FAP</end-condition>    
+      </trajectory-prediction>
+    </phase>
+    
+    <!-- s_FAP -11.37 but according to chart shoud be 11.5 ...  flat Earth issue!?  --> 
+
+
+    <!-- FMS DELELERATION PHASE ...................................  -->    
+    <phase id='6_decel-GD' description='Level-off and acceleration to GD' active='TRUE'>      
+      <aircraft config='CONF1' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ALT" units='ft'>hp_FAP</intent1>                  
+        <intent2 type="THR"  units='dimensionless'>IDLE</intent2>       
+        <end-condition variable="CAS" units='kt'>V_GD</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='7_GD-CONF1' description='Level-off at GD to reach 3NM at CONF1' active='TRUE'>  <!-- FCOM: CONF1 at least 3NM before FAP -->
+      <aircraft config='CONF1' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt'>V_GD</intent1>                      
+        <intent2 type="ALT" units='ft'>hp_FAP</intent2>
+        <end-condition variable='s' units='NM' delta='-3'>s_FAP</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='8_decel-220' description='Level-off and acceleration to 220kt' active='TRUE'>      
+      <aircraft config='CLEAN' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ALT" units='ft'>hp_FAP</intent1>                  
+        <intent2 type="THR"  units='dimensionless'>IDLE</intent2>   
+        <end-condition variable="CAS" units='kt'>V_GD</end-condition>   
+      </trajectory-prediction>
+    </phase>
+
+
+   <!-- TROMBONE ...................................  -->    
+   <phase id='9_TR-final' description='Level-off at 220kt to reach turn to final' active='TRUE'>  
+      <aircraft config='CLEAN' gear='UP'></aircraft>   ->
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt'>V_GD</intent1>                      
+        <intent2 type="ALT" units='ft'>hp_FAP</intent2>                
+        <end-condition variable='s' units='NM'>-23.2</end-condition>       <!-- TODO(pyNega): specify s_Final and not number-->  <!-- OJO! pel shortest ja ens haurem passat s_Final. estarem en base. controlar aixo!! -->
+      </trajectory-prediction>
+    </phase>
+    <phase id='10_TR-base' description='Level-off at 220kt to reach turn to base' active='TRUE'>  
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt'>V_GD</intent1>                      
+        <intent2 type="ALT" units='ft'>hp_FAP</intent2>                   
+        <end-condition variable='s' units='NM'>-28.8</end-condition>      <!-- TODO(pyNega): specify s_Base and not number-->
+      </trajectory-prediction>
+    </phase>
+    <phase id='11_TR-downwind' description='Level-off at 220kt in downwind' active='TRUE'>  
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt'>V_GD</intent1>                      
+        <intent2 type="ALT" units='ft'>hp_FAP</intent2>                   
+        <end-condition variable='s' units='NM'>-40.4</end-condition>       <!-- TODO(pyNega): specify s_DF640 and not number-->
+      </trajectory-prediction>
+    </phase>
+
+<!--  From ABEAM the airport to the start of the Trombone ...................................  -->    
+
+    <phase id='12_decel' description='Level-off and accel to 250 kt' active='TRUE'>
+      <trajectory-prediction>
+        <intent1 type="ALT" units='ft'>hp_FAP</intent1>                    
+        <intent2 type="THR"  units='dimensionless'>IDLE</intent2>         
+        <end-condition variable="CAS" units='kt'>250</end-condition>    
+      </trajectory-prediction>
+    </phase>
+
+<!--    <phase id='13_Des-250' description='Idle descent at 250 kt to abeam the airport' active='TRUE'>   -->
+<!--      <trajectory-prediction> -->  
+<!--        <intent1 type="CAS" units='kt'>250</intent1>         -->
+<!--        <intent2 type="THR"  units='dimensionless'>IDLE</intent2>       --> 
+<!--        <end-condition variable='s' units='NM'>-57.5</end-condition>    -->  <!-- TODO(pyNega): specify s_DF635 and not number--> 
+<!--      </trajectory-prediction> -->
+<!--    </phase> -->
+
+<!--  From ADNIS to ABEAM the airport  ...................................  -->    
+
+    <phase id='13_GeoDes' description='Geometric climb at 250 kt to ADNIS' active='TRUE'>
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt'>250</intent1>                  
+        <intent2 type="FPA"  units='deg'>-1.065</intent2>               <!-- TODO(pyNega): specify Idle and not number-->
+        <end-condition variable="s" units='NM'>-93.0</end-condition>    <!-- TODO(pyNega): specify s_ADNIS and not number--> 
+      </trajectory-prediction>
+    </phase>
+  </block>
+</profile>
+
+

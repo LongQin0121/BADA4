@@ -1,0 +1,14 @@
+pyBada3 @ git+https://gitlab.upc.edu/icarus/projects/pybada3
+numpy
+pygrib
+scipy
+pyproj
+pandas
+geographiclib
+casadi
+matplotlib
+dicttoxml
+xmltodict
+mpi4py
+requests
+setuptools

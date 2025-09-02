@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bearing Range Line -  MAP</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 10px 0;
+        }
+        
+        .map-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            min-width: 250px;
+        }
+        
+        .controls h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.2rem;
+        }
+        
+        .distance-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .distance-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .point-count {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .instructions h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .instructions ul {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .custom-marker {
+            background: #ff6b6b;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .leaflet-popup-content {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ Bearing Range Line - MAP</h1>
+            <p>点击地图添加标记点，自动计算相邻点之间的距离</p>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <div class="controls">
+                <h3>📊 距离信息</h3>
+                <div class="distance-info">
+                    <div class="distance-value" id="totalDistance">0.00 km</div>
+                    <div class="point-count" id="pointCount">已添加 0 个点</div>
+                </div>
+                
+                <button class="btn" onclick="clearAllPoints()">🗑️ 清除所有点</button>
+                <button class="btn" onclick="undoLastPoint()">↩️ 撤销上一点</button>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>🎯 使用说明</h3>
+            <ul>
+                <li><strong>点击地图</strong>：在任意位置添加标记点</li>
+                <li><strong>自动计算</strong>：系统会自动计算相邻两点之间的直线距离</li>
+                <li><strong>累计距离</strong>：右上角显示总路径长度</li>
+                <li><strong>清除重置</strong>：可以清除所有点或撤销最后一个点</li>
+                <li><strong>地图操作</strong>：支持缩放、拖拽浏览整个上海地区</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 初始化地图，以上海为中心
+        const map = L.map('map').setView([31.2304, 121.4737], 10);
+
+        // 添加地图图层
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // 存储所有标记点和线段
+        let markers = [];
+        let polylines = [];
+        let totalDistance = 0;
+
+        // 自定义标记点图标
+        const createCustomIcon = (number) => {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    width: 100%; 
+                    height: 100%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-weight: bold; 
+                    font-size: 12px;
+                ">${number}</div>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
+            });
+        };
+
+        // 计算两点之间的距离（使用Haversine公式）
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // 地球半径（公里）
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // 更新距离显示
+        function updateDistanceDisplay() {
+            document.getElementById('totalDistance').textContent = `${totalDistance.toFixed(2)} km`;
+            document.getElementById('pointCount').textContent = `已添加 ${markers.length} 个点`;
+        }
+
+        // 地图点击事件
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            const pointNumber = markers.length + 1;
+
+            // 创建新标记
+            const marker = L.marker([lat, lng], {
+                icon: createCustomIcon(pointNumber)
+            }).addTo(map);
+
+            // 添加弹出信息
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 150px;">
+                    <h4 style="margin: 5px 0; color: #333;">📍 点 ${pointNumber}</h4>
+                    <p style="margin: 5px 0; color: #666;">
+                        纬度: ${lat.toFixed(6)}<br>
+                        经度: ${lng.toFixed(6)}
+                    </p>
+                </div>
+            `);
+
+            // 如果不是第一个点，计算与前一个点的距离并绘制连线
+            if (markers.length > 0) {
+                const prevMarker = markers[markers.length - 1];
+                const prevLat = prevMarker.getLatLng().lat;
+                const prevLng = prevMarker.getLatLng().lng;
+                
+                // 计算距离
+                const distance = calculateDistance(prevLat, prevLng, lat, lng);
+                totalDistance += distance;
+
+                // 绘制连线
+                const polyline = L.polyline([
+                    [prevLat, prevLng],
+                    [lat, lng]
+                ], {
+                    color: '#ff6b6b',
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: '10, 5'
+                }).addTo(map);
+
+                // 在连线中点添加距离标签
+                const midLat = (prevLat + lat) / 2;
+                const midLng = (prevLng + lng) / 2;
+                
+                const distanceLabel = L.marker([midLat, midLng], {
+                    icon: L.divIcon({
+                        className: 'distance-label',
+                        html: `<div style="
+                            background: rgba(255, 107, 107, 0.9);
+                            color: white;
+                            padding: 4px 8px;
+                            border-radius: 15px;
+                            font-size: 12px;
+                            font-weight: bold;
+                            white-space: nowrap;
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                        ">${distance.toFixed(2)} km</div>`,
+                        iconSize: [0, 0]
+                    })
+                }).addTo(map);
+
+                polylines.push({ line: polyline, label: distanceLabel, distance: distance });
+            }
+
+            markers.push(marker);
+            updateDistanceDisplay();
+
+            // 添加一些动画效果
+            setTimeout(() => {
+                marker.openPopup();
+            }, 300);
+        });
+
+        // 清除所有点
+        function clearAllPoints() {
+            // 移除所有标记
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+
+            // 移除所有连线和距离标签
+            polylines.forEach(item => {
+                map.removeLayer(item.line);
+                map.removeLayer(item.label);
+            });
+            polylines = [];
+
+            totalDistance = 0;
+            updateDistanceDisplay();
+        }
+
+        // 撤销最后一个点
+        function undoLastPoint() {
+            if (markers.length === 0) return;
+
+            // 移除最后一个标记
+            const lastMarker = markers.pop();
+            map.removeLayer(lastMarker);
+
+            // 如果有连线，移除最后一条连线
+            if (polylines.length > 0) {
+                const lastPolyline = polylines.pop();
+                map.removeLayer(lastPolyline.line);
+                map.removeLayer(lastPolyline.label);
+                totalDistance -= lastPolyline.distance;
+            }
+
+            updateDistanceDisplay();
+        }
+
+        // 添加一些著名地标作为参考
+        const landmarks = [
+            { name: "外滩", lat: 31.2396, lng: 121.4906 },
+            { name: "东方明珠", lat: 31.2397, lng: 121.4999 },
+            { name: "人民广场", lat: 31.2307, lng: 121.4748 },
+            { name: "陆家嘴", lat: 31.2384, lng: 121.5041 },
+            { name: "虹桥机场", lat: 31.1979, lng: 121.3364 }
+        ];
+
+        landmarks.forEach(landmark => {
+            L.marker([landmark.lat, landmark.lng], {
+                icon: L.divIcon({
+                    className: 'landmark-marker',
+                    html: `<div style="
+                        background: #4CAF50;
+                        color: white;
+                        padding: 2px 6px;
+                        border-radius: 10px;
+                        font-size: 10px;
+                        white-space: nowrap;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    ">${landmark.name}</div>`,
+                    iconSize: [0, 0]
+                })
+            }).addTo(map);
+        });
+
+        // 初始化显示
+        updateDistanceDisplay();
+    </script>
+</body>
+</html>

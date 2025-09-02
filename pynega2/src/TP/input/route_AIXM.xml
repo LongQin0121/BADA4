@@ -1,0 +1,47 @@
+ <message:hasMember>
+		<aixm:Navaid gml:id="na_61fb0237-2d17-43a3-b617-b7bedbd97097">
+			<gml:identifier codeSpace="urn:uuid:">61FB0237-2D17-43A3-B617-B7BEDBD97097</gml:identifier>
+			<aixm:timeSlice>
+				<aixm:NavaidTimeSlice gml:id="nsts_61fb0237-2d17-43a3-b617-b7bedbd97097">
+					<gml:validTime>
+						<gml:TimePeriod gml:id="vt_61fb0237-2d17-43a3-b617-b7bedbd97097">
+							<gml:beginPosition>2015-12-10T00:00:00Z</gml:beginPosition>
+							<gml:endPosition indeterminatePosition="unknown"/>
+						</gml:TimePeriod>
+					</gml:validTime>
+					<aixm:interpretation>BASELINE</aixm:interpretation>
+					<aixm:sequenceNumber>1</aixm:sequenceNumber>
+					<aixm:featureLifetime>
+						<gml:TimePeriod gml:id="flt_61fb0237-2d17-43a3-b617-b7bedbd97097">
+							<gml:beginPosition indeterminatePosition="unknown"/>
+							<gml:endPosition indeterminatePosition="unknown"/>
+						</gml:TimePeriod>
+					</aixm:featureLifetime>
+					<aixm:type>VOR_DME</aixm:type>
+					<aixm:designator>JOA</aixm:designator>
+					<aixm:name>PALMA - SON SANT JOAN</aixm:name>
+					<aixm:purpose>ALL</aixm:purpose>
+					<aixm:location>
+						<aixm:ElevatedPoint srsName="urn:ogc:def:crs:EPSG::4326" srsDimension="2" gml:id="nsepnt_61fb0237-2d17-43a3-b617-b7bedbd97097">
+							<gml:pos>39.56473886 2.74658032999997</gml:pos>
+							<aixm:horizontalAccuracy xsi:nil="true" nilReason="unknown"/>
+							<aixm:elevation uom="m">0</aixm:elevation>
+							<aixm:verticalDatum>Islas</aixm:verticalDatum>
+							<aixm:verticalAccuracy xsi:nil="true" nilReason="unknown"/>
+						</aixm:ElevatedPoint>
+					</aixm:location>
+					<aixm:annotation>
+						<aixm:Note gml:id="NOTE_NAME_61FB0237-2D17-43A3-B617-B7BEDBD97097">
+							<aixm:propertyName>name</aixm:propertyName>
+							<aixm:purpose>OTHER:TRANSLATION</aixm:purpose>
+							<aixm:translatedNote>
+								<aixm:LinguisticNote gml:id="LN_NAME_61FB0237-2D17-43A3-B617-B7BEDBD97097">
+									<aixm:note lang="SPA">PALMA - SON SANT JOAN</aixm:note>
+								</aixm:LinguisticNote>
+							</aixm:translatedNote>
+						</aixm:Note>
+					</aixm:annotation>
+				</aixm:NavaidTimeSlice>
+			</aixm:timeSlice>
+		</aixm:Navaid>
+</message:hasMember>

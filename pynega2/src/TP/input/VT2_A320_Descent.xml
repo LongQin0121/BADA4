@@ -1,0 +1,72 @@
+<?xml version='1.0' encoding='utf-8'?>
+<profile id='A320V3'>
+  <airport_elevation units='ft'>0</airport_elevation>
+  <start_trajectory> 
+    <date>2020-12-25</date> 
+    <time>11:00:00</time>
+  </start_trajectory>
+  <block id='A320V3' type='DESCENT' description='Test trajectory'>
+    <integration>
+      <direction>backwards</direction>
+      <method>Euler</method>
+      <step>1</step>
+    </integration>
+    <initial-state>
+      <m units='kg'>58000</m>
+      <s units='NM'>0.0</s>
+      <hp units='ft' h_ref='AAL'>3000</hp>
+      <CAS units='kt'>250</CAS>
+    </initial-state>
+    <phase id='1' description='Phase 1' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt' factor='1.0'>prev_CAS</intent1>
+        <intent2 type="FPA" units='deg'>-3</intent2>
+        <end-condition variable="h_p" units='ft'>10000</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='2' description='Phase 2' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="ESF" units='dimensionless'>0.3</intent1>
+        <intent2 type="THR" units='dimensionless'>IDLE</intent2>
+        <end-condition variable="CAS" units='kt' factor='1.0'>300</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='3' description='Phase 3' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="CAS" units='kt' factor='1.0'>prev_CAS</intent1>
+        <intent2 type="THR" units='dimensionless'>IDLE</intent2>
+        <end-condition variable="h_p" units='ft'>30000</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='4' description='Phase 4' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <intent1 type="MACH" units='dimensionless'>prev_MACH</intent1>
+        <intent2 type="THR" units='dimensionless'>IDLE</intent2>
+        <end-condition variable="h_p" units='ft'>36000</end-condition>
+      </trajectory-prediction>
+    </phase>
+    <phase id='5' description='Phase 5' active='TRUE'>
+      <nodes></nodes>
+      <optimise>false</optimise>
+      <aircraft config='0' gear='UP'></aircraft>
+      <trajectory-prediction>
+        <step>10</step>
+        <intent1 type="ALT" units='ft' h_ref="AMSL">prev_ALT</intent1>
+        <intent2 type="MACH" units='dimensionless'>prev_MACH</intent2>
+        <end-condition variable="Delta_s" units='NM'>20</end-condition>
+      </trajectory-prediction>
+    </phase>
+  </block>
+</profile>

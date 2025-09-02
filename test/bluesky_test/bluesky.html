@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueSky 空中交通管制仿真演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .radar-panel {
+            flex: 2;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .control-panel {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .radar-screen {
+            width: 100%;
+            height: 500px;
+            background: radial-gradient(circle at center, #0a3d2e 0%, #001a0f 100%);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .radar-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+        }
+        
+        .aircraft {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.5s ease;
+        }
+        
+        .aircraft-icon {
+            font-size: 18px;
+            color: #00ff88;
+            text-shadow: 0 0 5px #00ff88;
+        }
+        
+        .aircraft-label {
+            position: absolute;
+            top: -25px;
+            left: 15px;
+            font-size: 10px;
+            color: #00ff88;
+            background: rgba(0,0,0,0.8);
+            padding: 2px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+        
+        .aircraft-trail {
+            position: absolute;
+            width: 2px;
+            background: rgba(0, 255, 136, 0.3);
+            transform-origin: top;
+        }
+        
+        .waypoint {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffaa00;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .waypoint-label {
+            position: absolute;
+            top: 10px;
+            left: -20px;
+            font-size: 8px;
+            color: #ffaa00;
+            white-space: nowrap;
+        }
+        
+        .conflict-zone {
+            position: absolute;
+            border: 2px dashed #ff4444;
+            border-radius: 50%;
+            background: rgba(255, 68, 68, 0.1);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+        
+        .info-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .aircraft-info {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 3px solid #00ff88;
+            font-size: 12px;
+        }
+        
+        .conflict-alert {
+            background: rgba(255, 68, 68, 0.2);
+            border-left: 3px solid #ff4444;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+        
+        .controls {
+            margin-top: 20px;
+        }
+        
+        .btn {
+            background: #00ff88;
+            color: black;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background: #00cc6a;
+        }
+        
+        .btn.danger {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .btn.danger:hover {
+            background: #cc3333;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-safe { background: #00ff88; }
+        .status-warning { background: #ffaa00; }
+        .status-danger { background: #ff4444; }
+        
+        .explanation {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛩️ BlueSky 空中交通管制仿真系统</h1>
+        <p>实时监控和管理空域中的飞机飞行</p>
+    </div>
+    
+    <div class="main-container">
+        <div class="radar-panel">
+            <h3>雷达显示屏 - 欧洲空域</h3>
+            <div class="radar-screen" id="radarScreen">
+                <svg class="radar-grid" viewBox="0 0 100 100">
+                    <!-- 雷达网格 -->
+                    <defs>
+                        <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#00ff88" stroke-width="0.2"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                    <!-- 同心圆 -->
+                    <circle cx="50" cy="50" r="20" fill="none" stroke="#00ff88" stroke-width="0.3"/>
+                    <circle cx="50" cy="50" r="35" fill="none" stroke="#00ff88" stroke-width="0.3"/>
+                </svg>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="startSimulation()">▶️ 开始仿真</button>
+                <button class="btn" onclick="pauseSimulation()">⏸️ 暂停</button>
+                <button class="btn" onclick="addAircraft()">➕ 添加飞机</button>
+                <button class="btn danger" onclick="createConflict()">⚠️ 模拟冲突</button>
+                <button class="btn" onclick="resetSimulation()">🔄 重置</button>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <div class="info-panel">
+                <h4>🎯 系统状态</h4>
+                <div id="systemStatus">
+                    <div><span class="status-indicator status-safe"></span>系统运行正常</div>
+                    <div>监控飞机: <span id="aircraftCount">8</span> 架</div>
+                    <div>当前冲突: <span id="conflictCount">0</span> 个</div>
+                    <div>仿真时间: <span id="simTime">12:34:56</span></div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h4>✈️ 飞机信息</h4>
+                <div id="aircraftList">
+                    <!-- 飞机信息将在这里动态生成 -->
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h4>⚠️ 冲突警告</h4>
+                <div id="conflictAlerts">
+                    <div style="color: #00ff88;">暂无冲突</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="explanation">
+        <h3>🔍 BlueSky 是什么？</h3>
+        <p><strong>BlueSky</strong> 是一个专业的<strong>空中交通管制仿真系统</strong>，就像上面这个演示一样，但功能更强大：</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+            <div>
+                <h4>🎮 主要功能：</h4>
+                <ul>
+                    <li><strong>飞机仿真</strong>：模拟真实飞机的飞行行为</li>
+                    <li><strong>航路管理</strong>：设计和管理飞行航线</li>
+                    <li><strong>冲突探测</strong>：自动发现飞机之间的潜在碰撞</li>
+                    <li><strong>交通流控</strong>：优化空域中的飞机流量</li>
+                    <li><strong>性能分析</strong>：评估空管系统的效率和安全性</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4>🏆 应用场景：</h4>
+                <ul>
+                    <li><strong>研究新算法</strong>：测试空管算法的效果</li>
+                    <li><strong>培训管制员</strong>：让管制员练习处理复杂情况</li>
+                    <li><strong>机场规划</strong>：评估机场容量和效率</li>
+                    <li><strong>政策制定</strong>：为航空政策提供数据支持</li>
+                    <li><strong>未来航空</strong>：研究无人机、电动飞机等新技术</li>
+                </ul>
+            </div>
+        </div>
+        
+        <p style="margin-top: 15px;">
+            <strong>简单说</strong>：BlueSky 就像一个超级复杂的"飞行模拟器"，但不是让你开飞机，而是让你管理整个天空中的所有飞机！
+            它帮助研究人员和工程师测试各种想法，确保真实世界的飞行更安全、更高效。
+        </p>
+    </div>
+
+    <script>
+        let aircraftData = [
+            {id: 'KLM1234', type: 'B789', x: 20, y: 30, heading: 90, alt: 35000, speed: 450, trail: []},
+            {id: 'LH5678', type: 'A320', x: 40, y: 25, heading: 45, alt: 37000, speed: 420, trail: []},
+            {id: 'AF9012', type: 'A359', x: 15, y: 40, heading: 180, alt: 39000, speed: 480, trail: []},
+            {id: 'BA3456', type: 'B738', x: 10, y: 35, heading: 270, alt: 33000, speed: 400, trail: []},
+            {id: 'IB7890', type: 'A321', x: 25, y: 65, heading: 90, alt: 35000, speed: 430, trail: []},
+            {id: 'AZ2345', type: 'B777', x: 60, y: 55, heading: 45, alt: 41000, speed: 470, trail: []},
+            {id: 'OS6789', type: 'A320', x: 70, y: 20, heading: 315, alt: 36000, speed: 410, trail: []},
+            {id: 'SN1357', type: 'A319', x: 30, y: 20, heading: 135, alt: 34000, speed: 390, trail: []}
+        ];
+        
+        let waypoints = [
+            {id: 'EHAM', x: 25, y: 30, name: '阿姆斯特丹'},
+            {id: 'EDDF', x: 45, y: 35, name: '法兰克福'},
+            {id: 'LFPG', x: 20, y: 45, name: '巴黎'},
+            {id: 'EGLL', x: 10, y: 30, name: '伦敦'},
+            {id: 'LEMD', x: 30, y: 70, name: '马德里'}
+        ];
+        
+        let isRunning = false;
+        let conflictActive = false;
+        let simTimeSeconds = 45296; // 12:34:56
+        
+        function initializeDisplay() {
+            const radarScreen = document.getElementById('radarScreen');
+            
+            // 清空现有内容
+            const existingAircraft = radarScreen.querySelectorAll('.aircraft, .waypoint, .conflict-zone');
+            existingAircraft.forEach(el => el.remove());
+            
+            // 添加航路点
+            waypoints.forEach(waypoint => {
+                const waypointEl = document.createElement('div');
+                waypointEl.className = 'waypoint';
+                waypointEl.style.left = waypoint.x + '%';
+                waypointEl.style.top = waypoint.y + '%';
+                waypointEl.innerHTML = `<div class="waypoint-label">${waypoint.name}</div>`;
+                radarScreen.appendChild(waypointEl);
+            });
+            
+            // 添加飞机
+            aircraftData.forEach(aircraft => {
+                createAircraftElement(aircraft);
+            });
+            
+            updateAircraftList();
+            updateSystemStatus();
+        }
+        
+        function createAircraftElement(aircraft) {
+            const radarScreen = document.getElementById('radarScreen');
+            const aircraftEl = document.createElement('div');
+            aircraftEl.className = 'aircraft';
+            aircraftEl.id = aircraft.id;
+            aircraftEl.style.left = aircraft.x + '%';
+            aircraftEl.style.top = aircraft.y + '%';
+            aircraftEl.innerHTML = `
+                <div class="aircraft-icon">✈️</div>
+                <div class="aircraft-label">
+                    ${aircraft.id}<br>
+                    ${Math.round(aircraft.alt/1000)}k ${aircraft.speed}kt
+                </div>
+            `;
+            
+            aircraftEl.onclick = () => selectAircraft(aircraft.id);
+            radarScreen.appendChild(aircraftEl);
+        }
+        
+        function updateAircraftList() {
+            const listEl = document.getElementById('aircraftList');
+            listEl.innerHTML = aircraftData.map(aircraft => `
+                <div class="aircraft-info">
+                    <strong>${aircraft.id}</strong> (${aircraft.type})<br>
+                    高度: ${aircraft.alt}ft | 速度: ${aircraft.speed}kt<br>
+                    航向: ${aircraft.heading}°
+                </div>
+            `).join('');
+        }
+        
+        function updateSystemStatus() {
+            document.getElementById('aircraftCount').textContent = aircraftData.length;
+            document.getElementById('conflictCount').textContent = conflictActive ? '1' : '0';
+            
+            const hours = Math.floor(simTimeSeconds / 3600);
+            const minutes = Math.floor((simTimeSeconds % 3600) / 60);
+            const seconds = simTimeSeconds % 60;
+            document.getElementById('simTime').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function startSimulation() {
+            isRunning = true;
+            if (window.simInterval) clearInterval(window.simInterval);
+            
+            window.simInterval = setInterval(() => {
+                if (!isRunning) return;
+                
+                // 更新飞机位置
+                aircraftData.forEach(aircraft => {
+                    const speed = 0.1; // 移动速度
+                    const radians = aircraft.heading * Math.PI / 180;
+                    
+                    aircraft.x += Math.cos(radians) * speed;
+                    aircraft.y += Math.sin(radians) * speed;
+                    
+                    // 边界检查
+                    if (aircraft.x > 95) aircraft.x = 5;
+                    if (aircraft.x < 5) aircraft.x = 95;
+                    if (aircraft.y > 90) aircraft.y = 10;
+                    if (aircraft.y < 10) aircraft.y = 90;
+                    
+                    // 更新DOM元素
+                    const el = document.getElementById(aircraft.id);
+                    if (el) {
+                        el.style.left = aircraft.x + '%';
+                        el.style.top = aircraft.y + '%';
+                    }
+                });
+                
+                // 检查冲突
+                checkConflicts();
+                
+                // 更新时间
+                simTimeSeconds++;
+                updateSystemStatus();
+                
+            }, 200);
+        }
+        
+        function pauseSimulation() {
+            isRunning = false;
+        }
+        
+        function checkConflicts() {
+            let hasConflict = false;
+            const conflictAlerts = document.getElementById('conflictAlerts');
+            
+            for (let i = 0; i < aircraftData.length; i++) {
+                for (let j = i + 1; j < aircraftData.length; j++) {
+                    const a1 = aircraftData[i];
+                    const a2 = aircraftData[j];
+                    
+                    const dx = a1.x - a2.x;
+                    const dy = a1.y - a2.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    const altDiff = Math.abs(a1.alt - a2.alt);
+                    
+                    if (distance < 8 && altDiff < 2000) { // 潜在冲突
+                        hasConflict = true;
+                        conflictAlerts.innerHTML = `
+                            <div class="aircraft-info conflict-alert">
+                                ⚠️ 冲突警告！<br>
+                                ${a1.id} 与 ${a2.id}<br>
+                                距离: ${(distance * 10).toFixed(1)} 海里<br>
+                                高度差: ${altDiff} 英尺
+                            </div>
+                        `;
+                        
+                        // 显示冲突区域
+                        showConflictZone((a1.x + a2.x) / 2, (a1.y + a2.y) / 2);
+                        break;
+                    }
+                }
+                if (hasConflict) break;
+            }
+            
+            if (!hasConflict) {
+                conflictAlerts.innerHTML = '<div style="color: #00ff88;">暂无冲突</div>';
+                hideConflictZone();
+            }
+            
+            conflictActive = hasConflict;
+        }
+        
+        function showConflictZone(x, y) {
+            let conflictZone = document.querySelector('.conflict-zone');
+            if (!conflictZone) {
+                conflictZone = document.createElement('div');
+                conflictZone.className = 'conflict-zone';
+                document.getElementById('radarScreen').appendChild(conflictZone);
+            }
+            
+            conflictZone.style.left = (x - 5) + '%';
+            conflictZone.style.top = (y - 5) + '%';
+            conflictZone.style.width = '10%';
+            conflictZone.style.height = '10%';
+            conflictZone.style.display = 'block';
+        }
+        
+        function hideConflictZone() {
+            const conflictZone = document.querySelector('.conflict-zone');
+            if (conflictZone) {
+                conflictZone.style.display = 'none';
+            }
+        }
+        
+        function createConflict() {
+            // 让两架飞机朝着对方飞行
+            if (aircraftData.length >= 2) {
+                aircraftData[0].heading = 45;
+                aircraftData[1].heading = 225;
+                aircraftData[0].alt = 35000;
+                aircraftData[1].alt = 35500;
+                
+                alert('已创建冲突场景！KLM1234 和 LH5678 将在相近高度相向飞行。');
+            }
+        }
+        
+        function addAircraft() {
+            const newId = 'NEW' + Math.floor(Math.random() * 1000);
+            const newAircraft = {
+                id: newId,
+                type: 'A320',
+                x: Math.random() * 80 + 10,
+                y: Math.random() * 80 + 10,
+                heading: Math.random() * 360,
+                alt: 30000 + Math.random() * 10000,
+                speed: 400 + Math.random() * 100,
+                trail: []
+            };
+            
+            aircraftData.push(newAircraft);
+            createAircraftElement(newAircraft);
+            updateAircraftList();
+        }
+        
+        function resetSimulation() {
+            isRunning = false;
+            if (window.simInterval) clearInterval(window.simInterval);
+            
+            // 重置飞机位置
+            aircraftData = [
+                {id: 'KLM1234', type: 'B789', x: 20, y: 30, heading: 90, alt: 35000, speed: 450, trail: []},
+                {id: 'LH5678', type: 'A320', x: 40, y: 25, heading: 45, alt: 37000, speed: 420, trail: []},
+                {id: 'AF9012', type: 'A359', x: 15, y: 40, heading: 180, alt: 39000, speed: 480, trail: []},
+                {id: 'BA3456', type: 'B738', x: 10, y: 35, heading: 270, alt: 33000, speed: 400, trail: []},
+                {id: 'IB7890', type: 'A321', x: 25, y: 65, heading: 90, alt: 35000, speed: 430, trail: []},
+                {id: 'AZ2345', type: 'B777', x: 60, y: 55, heading: 45, alt: 41000, speed: 470, trail: []},
+                {id: 'OS6789', type: 'A320', x: 70, y: 20, heading: 315, alt: 36000, speed: 410, trail: []},
+                {id: 'SN1357', type: 'A319', x: 30, y: 20, heading: 135, alt: 34000, speed: 390, trail: []}
+            ];
+            
+            conflictActive = false;
+            simTimeSeconds = 45296;
+            
+            initializeDisplay();
+        }
+        
+        function selectAircraft(id) {
+            alert(`选中飞机: ${id}\n在真实的BlueSky中，您可以:\n• 修改航向和高度\n• 设置新的航路点\n• 调整速度\n• 查看详细飞行数据`);
+        }
+        
+        // 初始化
+        window.onload = function() {
+            initializeDisplay();
+        };
+    </script>
+</body>
+</html>

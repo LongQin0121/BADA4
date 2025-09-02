@@ -1,0 +1,12 @@
+<scenario>
+	<flight_parameters> 
+		<V_des units="kt">330</V_des> 
+		<M_des units="dimensionless">0.77</M_des>
+		<hp_CRZ units="ft">35000</hp_CRZ> 
+		<s_CRZ units="NM">50</s_CRZ> 
+		<LM units="kg">53000</LM>
+		<hp_FAP units="ft">4000</hp_FAP>
+		<s_FAP units="NM">-11.5</s_FAP>
+		<gamma_ILS units="deg">-3</gamma_ILS>
+	</flight_parameters>
+</scenario>

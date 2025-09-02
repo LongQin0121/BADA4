@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路径规划与PID控制演示</title>
+    
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .map-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .map-section {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            color: #333;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .pid-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .pid-values {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .pid-value {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        
+        @media (max-width: 768px) {
+            .map-container {
+                flex-direction: column;
+            }
+            
+            canvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 从A到B的路径规划与PID控制演示</h1>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff4757;"></div>
+                <span>起点A</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2ed573;"></div>
+                <span>终点B</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3742fa;"></div>
+                <span>理想路径</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff6348;"></div>
+                <span>实际轨迹</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #57606f;"></div>
+                <span>障碍物</span>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div class="map-section">
+                <h3 style="text-align: center; margin-bottom: 15px;">🎯 路径规划地图</h3>
+                <canvas id="mapCanvas" width="400" height="300"></canvas>
+                <div class="controls">
+                    <button onclick="startSimulation()" id="startBtn">开始仿真</button>
+                    <button onclick="resetSimulation()" id="resetBtn">重置</button>
+                    <button onclick="togglePause()" id="pauseBtn">暂停</button>
+                </div>
+            </div>
+            
+            <div class="map-section">
+                <h3 style="text-align: center; margin-bottom: 15px;">📊 PID控制分析</h3>
+                <canvas id="errorCanvas" width="400" height="300"></canvas>
+                <div style="text-align: center; margin-top: 10px; font-size: 14px; color: #666;">
+                    实时误差曲线 (蓝: 横向误差, 红: 航向误差)
+                </div>
+            </div>
+        </div>
+        
+        <div class="pid-info">
+            <h3>🔧 PID控制参数与状态</h3>
+            <div class="pid-values">
+                <div class="pid-value">
+                    <div style="font-size: 24px; font-weight: bold;" id="pValue">P: 0.00</div>
+                    <div>比例项 (当前误差)</div>
+                </div>
+                <div class="pid-value">
+                    <div style="font-size: 24px; font-weight: bold;" id="iValue">I: 0.00</div>
+                    <div>积分项 (累积误差)</div>
+                </div>
+                <div class="pid-value">
+                    <div style="font-size: 24px; font-weight: bold;" id="dValue">D: 0.00</div>
+                    <div>微分项 (误差变化率)</div>
+                </div>
+                <div class="pid-value">
+                    <div style="font-size: 24px; font-weight: bold;" id="steeringValue">转向: 0°</div>
+                    <div>方向盘角度</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 15px;">
+            <h3>💡 PID控制原理解释：</h3>
+            <div style="line-height: 1.8; font-size: 16px;">
+                <p><strong>🎯 P控制 (比例项)：</strong> 根据车辆与目标路径的当前距离偏差来调整转向角度。偏离越远，转向越大。</p>
+                <p><strong>📈 I控制 (积分项)：</strong> 累积历史偏差，消除系统性误差。如果车辆总是偏向一侧，积分项会逐渐纠正。</p>
+                <p><strong>⚡ D控制 (微分项)：</strong> 根据误差的变化趋势预测性调整，防止过度转向造成震荡。</p>
+                <p><strong>🚗 总控制输出：</strong> 转向角 = Kp×误差 + Ki×Σ误差 + Kd×误差变化率</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mapCanvas = document.getElementById('mapCanvas');
+        const mapCtx = mapCanvas.getContext('2d');
+        const errorCanvas = document.getElementById('errorCanvas');
+        const errorCtx = errorCanvas.getContext('2d');
+        
+        let animationRunning = false;
+        let animationPaused = false;
+        let animationId = null;
+        
+        // 路径点和车辆状态
+        const pathPoints = [
+            {x: 50, y: 250},   // A点
+            {x: 100, y: 200},
+            {x: 150, y: 180},
+            {x: 200, y: 160},
+            {x: 250, y: 140},
+            {x: 300, y: 120},
+            {x: 350, y: 100}   // B点
+        ];
+        
+        const obstacles = [
+            {x: 180, y: 200, width: 40, height: 30},
+            {x: 280, y: 180, width: 35, height: 25}
+        ];
+        
+        let vehicle = {
+            x: 50,
+            y: 250,
+            angle: -Math.PI/6,
+            targetIndex: 1,
+            lateralError: 0,
+            headingError: 0,
+            errorIntegral: 0,
+            previousError: 0,
+            actualPath: [{x: 50, y: 250}],
+            errorHistory: []
+        };
+        
+        // PID参数
+        const pid = {
+            kp: 2.0,
+            ki: 0.1,
+            kd: 0.5
+        };
+        
+        function drawMap() {
+            mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+            
+            // 绘制网格
+            mapCtx.strokeStyle = '#f0f0f0';
+            mapCtx.lineWidth = 0.5;
+            for(let i = 0; i < mapCanvas.width; i += 20) {
+                mapCtx.beginPath();
+                mapCtx.moveTo(i, 0);
+                mapCtx.lineTo(i, mapCanvas.height);
+                mapCtx.stroke();
+            }
+            for(let i = 0; i < mapCanvas.height; i += 20) {
+                mapCtx.beginPath();
+                mapCtx.moveTo(0, i);
+                mapCtx.lineTo(mapCanvas.width, i);
+                mapCtx.stroke();
+            }
+            
+            // 绘制理想路径
+            mapCtx.strokeStyle = '#3742fa';
+            mapCtx.lineWidth = 3;
+            mapCtx.beginPath();
+            mapCtx.moveTo(pathPoints[0].x, pathPoints[0].y);
+            for(let i = 1; i < pathPoints.length; i++) {
+                mapCtx.lineTo(pathPoints[i].x, pathPoints[i].y);
+            }
+            mapCtx.stroke();
+            
+            // 绘制路径点
+            pathPoints.forEach((point, index) => {
+                if(index === 0) {
+                    // 起点A
+                    mapCtx.fillStyle = '#ff4757';
+                    mapCtx.beginPath();
+                    mapCtx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
+                    mapCtx.fill();
+                    mapCtx.fillStyle = 'white';
+                    mapCtx.font = 'bold 12px Arial';
+                    mapCtx.textAlign = 'center';
+                    mapCtx.fillText('A', point.x, point.y + 4);
+                } else if(index === pathPoints.length - 1) {
+                    // 终点B
+                    mapCtx.fillStyle = '#2ed573';
+                    mapCtx.beginPath();
+                    mapCtx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
+                    mapCtx.fill();
+                    mapCtx.fillStyle = 'white';
+                    mapCtx.font = 'bold 12px Arial';
+                    mapCtx.textAlign = 'center';
+                    mapCtx.fillText('B', point.x, point.y + 4);
+                } else {
+                    // 中间点
+                    mapCtx.fillStyle = '#3742fa';
+                    mapCtx.beginPath();
+                    mapCtx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
+                    mapCtx.fill();
+                }
+            });
+            
+            // 绘制障碍物
+            mapCtx.fillStyle = '#57606f';
+            obstacles.forEach(obs => {
+                mapCtx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            });
+            
+            // 绘制实际轨迹
+            if(vehicle.actualPath.length > 1) {
+                mapCtx.strokeStyle = '#ff6348';
+                mapCtx.lineWidth = 2;
+                mapCtx.beginPath();
+                mapCtx.moveTo(vehicle.actualPath[0].x, vehicle.actualPath[0].y);
+                for(let i = 1; i < vehicle.actualPath.length; i++) {
+                    mapCtx.lineTo(vehicle.actualPath[i].x, vehicle.actualPath[i].y);
+                }
+                mapCtx.stroke();
+            }
+            
+            // 绘制车辆
+            mapCtx.save();
+            mapCtx.translate(vehicle.x, vehicle.y);
+            mapCtx.rotate(vehicle.angle);
+            
+            // 车身
+            mapCtx.fillStyle = '#2c2c54';
+            mapCtx.fillRect(-8, -4, 16, 8);
+            
+            // 车头
+            mapCtx.fillStyle = '#ff3838';
+            mapCtx.fillRect(6, -2, 4, 4);
+            
+            mapCtx.restore();
+            
+            // 绘制误差线
+            if(vehicle.targetIndex < pathPoints.length) {
+                const target = pathPoints[vehicle.targetIndex];
+                mapCtx.strokeStyle = '#ff9ff3';
+                mapCtx.lineWidth = 1;
+                mapCtx.setLineDash([5, 5]);
+                mapCtx.beginPath();
+                mapCtx.moveTo(vehicle.x, vehicle.y);
+                mapCtx.lineTo(target.x, target.y);
+                mapCtx.stroke();
+                mapCtx.setLineDash([]);
+            }
+        }
+        
+        function drawErrorGraph() {
+            errorCtx.clearRect(0, 0, errorCanvas.width, errorCanvas.height);
+            
+            if(vehicle.errorHistory.length < 2) return;
+            
+            // 绘制网格
+            errorCtx.strokeStyle = '#f0f0f0';
+            errorCtx.lineWidth = 0.5;
+            for(let i = 0; i < errorCanvas.width; i += 40) {
+                errorCtx.beginPath();
+                errorCtx.moveTo(i, 0);
+                errorCtx.lineTo(i, errorCanvas.height);
+                errorCtx.stroke();
+            }
+            for(let i = 0; i < errorCanvas.height; i += 30) {
+                errorCtx.beginPath();
+                errorCtx.moveTo(0, i);
+                errorCtx.lineTo(errorCanvas.width, i);
+                errorCtx.stroke();
+            }
+            
+            // 中心线
+            errorCtx.strokeStyle = '#ccc';
+            errorCtx.lineWidth = 1;
+            errorCtx.beginPath();
+            errorCtx.moveTo(0, errorCanvas.height/2);
+            errorCtx.lineTo(errorCanvas.width, errorCanvas.height/2);
+            errorCtx.stroke();
+            
+            const maxPoints = 200;
+            const startIndex = Math.max(0, vehicle.errorHistory.length - maxPoints);
+            const history = vehicle.errorHistory.slice(startIndex);
+            
+            if(history.length > 1) {
+                const xStep = errorCanvas.width / Math.max(history.length - 1, 1);
+                
+                // 绘制横向误差
+                errorCtx.strokeStyle = '#3742fa';
+                errorCtx.lineWidth = 2;
+                errorCtx.beginPath();
+                history.forEach((error, index) => {
+                    const x = index * xStep;
+                    const y = errorCanvas.height/2 - error.lateral * 2;
+                    if(index === 0) {
+                        errorCtx.moveTo(x, y);
+                    } else {
+                        errorCtx.lineTo(x, y);
+                    }
+                });
+                errorCtx.stroke();
+                
+                // 绘制航向误差
+                errorCtx.strokeStyle = '#ff4757';
+                errorCtx.lineWidth = 2;
+                errorCtx.beginPath();
+                history.forEach((error, index) => {
+                    const x = index * xStep;
+                    const y = errorCanvas.height/2 - error.heading * 20;
+                    if(index === 0) {
+                        errorCtx.moveTo(x, y);
+                    } else {
+                        errorCtx.lineTo(x, y);
+                    }
+                });
+                errorCtx.stroke();
+            }
+        }
+        
+        function calculatePID() {
+            if(vehicle.targetIndex >= pathPoints.length) return 0;
+            
+            const target = pathPoints[vehicle.targetIndex];
+            
+            // 计算横向误差
+            const dx = target.x - vehicle.x;
+            const dy = target.y - vehicle.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            // 计算目标角度
+            const targetAngle = Math.atan2(dy, dx);
+            
+            // 计算航向误差
+            let headingError = targetAngle - vehicle.angle;
+            while(headingError > Math.PI) headingError -= 2*Math.PI;
+            while(headingError < -Math.PI) headingError += 2*Math.PI;
+            
+            // 横向误差 (车辆到目标点的距离)
+            const lateralError = distance * Math.sin(headingError);
+            
+            // 更新积分项
+            vehicle.errorIntegral += lateralError;
+            
+            // 限制积分项防止积分饱和
+            vehicle.errorIntegral = Math.max(-50, Math.min(50, vehicle.errorIntegral));
+            
+            // 计算微分项
+            const errorDerivative = lateralError - vehicle.previousError;
+            
+            // PID输出
+            const pTerm = pid.kp * lateralError;
+            const iTerm = pid.ki * vehicle.errorIntegral;
+            const dTerm = pid.kd * errorDerivative;
+            
+            const steering = pTerm + iTerm + dTerm;
+            
+            // 更新状态
+            vehicle.lateralError = lateralError;
+            vehicle.headingError = headingError;
+            vehicle.previousError = lateralError;
+            
+            // 记录误差历史
+            vehicle.errorHistory.push({
+                lateral: lateralError,
+                heading: headingError,
+                time: Date.now()
+            });
+            
+            // 更新UI
+            document.getElementById('pValue').textContent = `P: ${pTerm.toFixed(2)}`;
+            document.getElementById('iValue').textContent = `I: ${iTerm.toFixed(2)}`;
+            document.getElementById('dValue').textContent = `D: ${dTerm.toFixed(2)}`;
+            document.getElementById('steeringValue').textContent = `转向: ${(steering * 180/Math.PI).toFixed(1)}°`;
+            
+            return steering;
+        }
+        
+        function updateVehicle() {
+            if(vehicle.targetIndex >= pathPoints.length) return;
+            
+            const steering = calculatePID();
+            
+            // 更新车辆状态（简化的车辆模型）
+            const speed = 2.0;
+            vehicle.angle += steering * 0.1;
+            vehicle.x += speed * Math.cos(vehicle.angle);
+            vehicle.y += speed * Math.sin(vehicle.angle);
+            
+            // 记录轨迹
+            vehicle.actualPath.push({x: vehicle.x, y: vehicle.y});
+            
+            // 检查是否到达当前目标点
+            const target = pathPoints[vehicle.targetIndex];
+            const distanceToTarget = Math.sqrt(
+                (vehicle.x - target.x)**2 + (vehicle.y - target.y)**2
+            );
+            
+            if(distanceToTarget < 15 && vehicle.targetIndex < pathPoints.length - 1) {
+                vehicle.targetIndex++;
+                // 重置积分项避免过冲
+                vehicle.errorIntegral *= 0.5;
+            }
+        }
+        
+        function animate() {
+            if(!animationRunning || animationPaused) return;
+            
+            updateVehicle();
+            drawMap();
+            drawErrorGraph();
+            
+            if(vehicle.targetIndex < pathPoints.length) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                animationRunning = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = '开始仿真';
+            }
+        }
+        
+        function startSimulation() {
+            if(!animationRunning) {
+                animationRunning = true;
+                animationPaused = false;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('startBtn').textContent = '仿真中...';
+                document.getElementById('pauseBtn').textContent = '暂停';
+                animate();
+            }
+        }
+        
+        function resetSimulation() {
+            animationRunning = false;
+            animationPaused = false;
+            if(animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            vehicle = {
+                x: 50,
+                y: 250,
+                angle: -Math.PI/6,
+                targetIndex: 1,
+                lateralError: 0,
+                headingError: 0,
+                errorIntegral: 0,
+                previousError: 0,
+                actualPath: [{x: 50, y: 250}],
+                errorHistory: []
+            };
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '开始仿真';
+            document.getElementById('pauseBtn').textContent = '暂停';
+            
+            // 重置UI显示
+            document.getElementById('pValue').textContent = 'P: 0.00';
+            document.getElementById('iValue').textContent = 'I: 0.00';
+            document.getElementById('dValue').textContent = 'D: 0.00';
+            document.getElementById('steeringValue').textContent = '转向: 0°';
+            
+            drawMap();
+            errorCtx.clearRect(0, 0, errorCanvas.width, errorCanvas.height);
+        }
+        
+        function togglePause() {
+            if(animationRunning) {
+                animationPaused = !animationPaused;
+                document.getElementById('pauseBtn').textContent = animationPaused ? '继续' : '暂停';
+                if(!animationPaused) {
+                    animate();
+                }
+            }
+        }
+        
+        // 初始化
+        drawMap();
+        
+        // 响应式设计
+        function resizeCanvases() {
+            const container = document.querySelector('.map-section');
+            const maxWidth = Math.min(400, container.clientWidth - 40);
+            
+            if(maxWidth < 400) {
+                mapCanvas.style.width = maxWidth + 'px';
+                mapCanvas.style.height = (maxWidth * 0.75) + 'px';
+                errorCanvas.style.width = maxWidth + 'px';
+                errorCanvas.style.height = (maxWidth * 0.75) + 'px';
+            }
+        }
+        
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+    </script>
+</body>
+</html>
